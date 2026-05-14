@@ -14,7 +14,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 # =============================
 # CONFIG
 # =============================
-BOT_TOKEN = "YOUR_BOT_TOKEN"
+BOT_TOKEN = "8638614270:AAHXrpYgymcHV-PSuODjuJf9a8DgTByPUjs"
 
 # =============================
 # TELEGRAM BOT
