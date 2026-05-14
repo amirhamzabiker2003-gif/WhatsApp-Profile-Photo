@@ -9,32 +9,36 @@ from flask import Flask
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
-# =====================================
-# FLASK APP
-# =====================================
+# =========================
+# FLASK
+# =========================
 app = Flask(__name__)
 
 @app.route('/')
 def home():
     return "Bot Running"
 
-# =====================================
-# CONFIG
-# =====================================
+# =========================
+# TOKEN
+# =========================
 BOT_TOKEN = os.getenv("8638614270:AAHXrpYgymcHV-PSuODjuJf9a8DgTByPUjs")
 
-# =====================================
+if not BOT_TOKEN:
+    print("BOT_TOKEN Missing")
+    exit()
+
+# =========================
 # TELEGRAM BOT
-# =====================================
+# =========================
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# =====================================
+# =========================
 # CHROME OPTIONS
-# =====================================
+# =========================
 chrome_options = Options()
 
 chrome_options.add_argument("--headless=new")
@@ -45,9 +49,9 @@ chrome_options.add_argument("--window-size=1920,1080")
 chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 chrome_options.add_argument("--user-data-dir=/tmp/chrome-data")
 
-# =====================================
-# DRIVER
-# =====================================
+# =========================
+# START CHROME
+# =========================
 print("Starting Chrome...")
 
 try:
@@ -59,66 +63,65 @@ try:
 
 except Exception as e:
 
-    print("Chrome Error:")
+    print("Chrome Error")
     print(e)
     exit()
 
-# =====================================
+# =========================
 # OPEN WHATSAPP WEB
-# =====================================
-print("Opening WhatsApp Web...")
-
+# =========================
 driver.get("https://web.whatsapp.com")
 
-print("Scan QR Manually From Browser Session")
+print("QR Login Required")
 
-# =====================================
+# =========================
 # START COMMAND
-# =====================================
+# =========================
 @bot.message_handler(commands=['start'])
 def start(message):
 
     bot.reply_to(
         message,
-        "Send WhatsApp Number
-
-Example:
-8801XXXXXXXXX"
+        "Send WhatsApp Number\n\nExample:\n8801XXXXXXXXX"
     )
 
-# =====================================
-# NUMBER HANDLER
-# =====================================
+# =========================
+# GET PROFILE PHOTO
+# =========================
 @bot.message_handler(func=lambda m: True)
-def get_profile(message):
+def get_photo(message):
 
     chat_id = message.chat.id
 
     try:
 
-        number = message.text.strip()
-
-        number = re.sub(r'[^0-9]', '', number)
+        number = re.sub(r'[^0-9]', '', message.text)
 
         if len(number) < 8:
-            bot.send_message(chat_id, "Invalid Number")
+
+            bot.send_message(
+                chat_id,
+                "Invalid Number"
+            )
+
             return
 
         url = f"https://web.whatsapp.com/send?phone={number}"
 
         driver.get(url)
 
-        time.sleep(8)
+        time.sleep(10)
 
-        images = driver.find_elements(By.TAG_NAME, 'img')
+        imgs = driver.find_elements(By.TAG_NAME, "img")
 
         image_url = None
 
-        for img in images:
+        for img in imgs:
 
-            src = img.get_attribute('src')
+            src = img.get_attribute("src")
 
-            if src and 'cdn' in src:
+            if src and "cdn.whatsapp.net" in src:
+
                 image_url = src
                 break
 
@@ -126,7 +129,7 @@ def get_profile(message):
 
             bot.send_message(
                 chat_id,
-                "Photo not found or privacy protected"
+                "Photo unavailable or privacy protected"
             )
 
             return
@@ -135,10 +138,10 @@ def get_profile(message):
 
         filename = f"{number}.jpg"
 
-        with open(filename, 'wb') as f:
+        with open(filename, "wb") as f:
             f.write(response.content)
 
-        with open(filename, 'rb') as photo:
+        with open(filename, "rb") as photo:
             bot.send_photo(chat_id, photo)
 
         os.remove(filename)
@@ -149,22 +152,25 @@ def get_profile(message):
 
         bot.send_message(
             chat_id,
-            "Error fetching photo"
+            "Error Fetching Photo"
         )
 
-# =====================================
-# BOT THREAD
-# =====================================
+# =========================
+# RUN BOT
+# =========================
 def run_bot():
     bot.infinity_polling()
 
 threading.Thread(target=run_bot).start()
 
-# =====================================
+# =========================
 # RUN FLASK
-# =====================================
-if __name__ == '__main__':
+# =========================
+if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 10000))
 
-    app.run(host='0.0.0.0', port=port)
+    app.run(
+        host="0.0.0.0",
+        port=port
+    )
